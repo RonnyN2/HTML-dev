@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌉 Simulador de Tráfico en Puente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .simulation-area {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .traffic-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 30px;
+            align-items: start;
+            margin-bottom: 30px;
+        }
+
+        .queue-section {
+            background: linear-gradient(145deg, #f0f2f5, #e1e8ed);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+            border: 2px solid #3498db;
+        }
+
+        .queue-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .queue-container {
+            min-height: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+        }
+
+        .vehicle-card {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .vehicle-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 2px 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .bridge-section {
+            background: linear-gradient(145deg, #95a5a6, #7f8c8d);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bridge-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            pointer-events: none;
+        }
+
+        .traffic-light {
+            font-size: 3rem;
+            margin: 10px 0;
+            display: block;
+            transition: all 0.3s ease;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .bridge-visual {
+            background: linear-gradient(90deg, #34495e, #2c3e50, #34495e);
+            height: 60px;
+            margin: 20px 0;
+            border-radius: 30px;
+            position: relative;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .bridge-vehicle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .bridge-info {
+            color: white;
+            font-weight: bold;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-start {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-pause {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-reset {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #ecf0f1, #bdc3c7);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .log-panel {
+            background: #2c3e50;
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-title {
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .log-entry {
+            color: #bdc3c7;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+
+        .log-entry.success {
+            border-left-color: #27ae60;
+        }
+
+        .log-entry.error {
+            border-left-color: #e74c3c;
+        }
+
+        .log-entry.warning {
+            border-left-color: #f39c12;
+        }
+
+        @media (max-width: 768px) {
+            .traffic-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌉 SIMULADOR DE TRÁFICO EN PUENTE</h1>
+            <p>Sistema inteligente de control de tráfico bidireccional</p>
+        </div>
+
+        <div class="simulation-area">
+            <div class="traffic-layout">
+                <!-- Cola Izquierda -->
+                <div class="queue-section">
+                    <div class="queue-title">
+                        🚗 COLA IZQUIERDA
+                    </div>
+                    <div class="queue-container" id="queue-left"></div>
+                </div>
+
+                <!-- Puente Central -->
+                <div class="bridge-section">
+                    <div class="traffic-light" id="light-left">🔴</div>
+                    <div class="bridge-visual" id="bridge">
+                        <div class="bridge-vehicle" id="bridge-vehicle" style="display: none;">🚛</div>
+                    </div>
+                    <div class="traffic-light" id="light-right">🔴</div>
+                    <div class="bridge-info" id="bridge-info">
+                        ⏱️ Tiempo de semáforo: <span id="timer">0</span>s
+                    </div>
+                </div>
+
+                <!-- Cola Derecha -->
+                <div class="queue-section">
+                    <div class="queue-title">
+                        🚗 COLA DERECHA
+                    </div>
+                    <div class="queue-container" id="queue-right"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-start" onclick="startSimulation()">
+                    ▶️ INICIAR
+                </button>
+                <button class="btn btn-pause" onclick="pauseSimulation()">
+                    ⏸️ PAUSAR
+                </button>
+                <button class="btn btn-reset" onclick="resetSimulation()">
+                    🔄 REINICIAR
+                </button>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-card">
+                    <div class="stat-number" id="vehicles-generated">0</div>
+                    <div class="stat-label">🚗 Vehículos Generados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="vehicles-processed">0</div>
+                    <div class="stat-label">✅ Vehículos Procesados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="vehicles-rejected">0</div>
+                    <div class="stat-label">❌ Vehículos Rechazados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avg-wait-time">0</div>
+                    <div class="stat-label">⏱️ Tiempo Promedio (s)</div>
+                </div>
+            </div>
+
+            <div class="log-panel">
+                <div class="log-title">📝 LOG DE EVENTOS</div>
+                <div id="event-log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BridgeTrafficSimulator {
+            constructor() {
+                // Configuración
+                this.MAX_WEIGHT = 1000;
+                this.MAX_SPEED = 20;
+                this.BRIDGE_LENGTH = 80;
+                this.GENERATION_INTERVAL = 3000; // Generación cada 3 segundos
+                this.LIGHT_DURATION = 10; // Duración mínima del semáforo en verde
+                
+                // Estado
+                this.leftQueue = [];
+                this.rightQueue = [];
+                this.vehicleOnBridge = null;
+                this.currentDirection = 'left'; // Dirección actual del semáforo
+                this.lightTimer = 0; // Contador para cambio de semáforo
+                this.timer = 0;
+                this.isRunning = false;
+                this.vehicleCounter = 0;
+                
+                // Estadísticas
+                this.stats = {
+                    generated: 0,
+                    processed: 0,
+                    rejected: 0,
+                    totalWaitTime: 0
+                };
+                
+                // Intervalos
+                this.generationInterval = null;
+                this.simulationInterval = null;
+                
+                this.initializeDisplay();
+                this.logEvent('🚀 Simulador iniciado - Presiona INICIAR para comenzar', 'info');
+            }
+            
+            generateVehicle() {
+                const weight = Math.floor(Math.random() * 9) * 100 + 600; // 600-1400 kg
+                const speed = Math.max(5, this.MAX_SPEED - (weight - 600) / 50);
+                const side = Math.random() < 0.5 ? 'left' : 'right';
+                
+                const vehicle = {
+                    id: ++this.vehicleCounter,
+                    weight: weight,
+                    speed: parseFloat(speed.toFixed(2)),
+                    side: side,
+                    arrivalTime: Date.now()
+                };
+                
+                if (side === 'left') {
+                    this.leftQueue.push(vehicle);
+                } else {
+                    this.rightQueue.push(vehicle);
+                }
+                
+                this.stats.generated++;
+                this.logEvent(
+                    `🚗 Vehículo #${vehicle.id} generado en ${side === 'left' ? 'izquierda' : 'derecha'} - ${vehicle.weight}kg, ${vehicle.speed}m/s`,
+                    'info'
+                );
+                
+                this.updateDisplay();
+            }
+            
+            controlTrafficLights() {
+                // Si hay un vehículo en el puente, no cambiar semáforos
+                if (this.vehicleOnBridge) return;
+                
+                this.lightTimer++;
+                
+                // Obtener la cola actual y la opuesta
+                const currentQueue = this.currentDirection === 'left' ? this.leftQueue : this.rightQueue;
+                const oppositeQueue = this.currentDirection === 'left' ? this.rightQueue : this.leftQueue;
+                
+                // Cambiar semáforo si:
+                // 1. No hay vehículos en la dirección actual Y hay en la opuesta
+                // 2. O si ha pasado el tiempo mínimo y hay vehículos esperando en la dirección opuesta
+                const shouldChange = (currentQueue.length === 0 && oppositeQueue.length > 0) ||
+                                   (this.lightTimer >= this.LIGHT_DURATION && oppositeQueue.length > 0);
+                
+                if (shouldChange) {
+                    this.currentDirection = this.currentDirection === 'left' ? 'right' : 'left';
+                    this.lightTimer = 0;
+                    this.logEvent(`🚦 Semáforo cambiado a ${this.currentDirection === 'left' ? 'izquierda' : 'derecha'}`, 'info');
+                }
+                
+                // Actualizar estado de los semáforos
+                if (this.currentDirection === 'left') {
+                    this.leftLight = 'green';
+                    this.rightLight = 'red';
+                } else {
+                    this.leftLight = 'red';
+                    this.rightLight = 'green';
+                }
+            }
+            
+            processTraffic() {
+                // Si ya hay un vehículo en el puente, no procesar más
+                if (this.vehicleOnBridge) return;
+                
+                let vehicle = null;
+                let side = null;
+                
+                // Procesar vehículo según el semáforo actual
+                if (this.currentDirection === 'left' && this.leftQueue.length > 0) {
+                    vehicle = this.leftQueue.shift();
+                    side = 'left';
+                } else if (this.currentDirection === 'right' && this.rightQueue.length > 0) {
+                    vehicle = this.rightQueue.shift();
+                    side = 'right';
+                }
+                
+                if (vehicle) {
+                    // Verificar peso
+                    if (vehicle.weight > this.MAX_WEIGHT) {
+                        this.stats.rejected++;
+                        this.logEvent(
+                            `❌ Vehículo #${vehicle.id} rechazado por sobrepeso (${vehicle.weight}kg > ${this.MAX_WEIGHT}kg)`,
+                            'error'
+                        );
+                        return; // El vehículo se pierde (rechazado)
+                    }
+                    
+                    // Iniciar cruce
+                    this.vehicleOnBridge = vehicle;
+                    const crossTime = (this.BRIDGE_LENGTH / vehicle.speed) * 1000;
+                    
+                    // Calcular tiempo de espera
+                    const waitTime = (Date.now() - vehicle.arrivalTime) / 1000;
+                    this.stats.totalWaitTime += waitTime;
+                    
+                    this.logEvent(
+                        `🌉 Vehículo #${vehicle.id} iniciando cruce desde ${side === 'left' ? 'izquierda' : 'derecha'} - Tiempo: ${(crossTime/1000).toFixed(1)}s`,
+                        'success'
+                    );
+                    
+                    this.updateDisplay();
+                    
+                    // Programar finalización del cruce
+                    setTimeout(() => {
+                        this.finishCrossing(vehicle);
+                    }, crossTime);
+                }
+            }
+            
+            finishCrossing(vehicle) {
+                if (this.vehicleOnBridge && this.vehicleOnBridge.id === vehicle.id) {
+                    this.vehicleOnBridge = null;
+                    this.stats.processed++;
+                    
+                    this.logEvent(
+                        `✅ Vehículo #${vehicle.id} completó el cruce`,
+                        'success'
+                    );
+                    
+                    this.updateDisplay();
+                }
+            }
+            
+            updateDisplay() {
+                // Actualizar semáforos
+                document.getElementById('light-left').textContent = this.leftLight === 'green' ? '🟢' : '🔴';
+                document.getElementById('light-right').textContent = this.rightLight === 'green' ? '🟢' : '🔴';
+                document.getElementById('timer').textContent = this.timer;
+                
+                // Actualizar colas
+                this.updateQueue('queue-left', this.leftQueue);
+                this.updateQueue('queue-right', this.rightQueue);
+                
+                // Actualizar vehículo en puente
+                const bridgeVehicle = document.getElementById('bridge-vehicle');
+                if (this.vehicleOnBridge) {
+                    bridgeVehicle.style.display = 'block';
+                    bridgeVehicle.textContent = this.getVehicleIcon(this.vehicleOnBridge.weight);
+                } else {
+                    bridgeVehicle.style.display = 'none';
+                }
+                
+                // Actualizar estadísticas
+                document.getElementById('vehicles-generated').textContent = this.stats.generated;
+                document.getElementById('vehicles-processed').textContent = this.stats.processed;
+                document.getElementById('vehicles-rejected').textContent = this.stats.rejected;
+                
+                const avgWaitTime = this.stats.processed > 0 ? 
+                    (this.stats.totalWaitTime / this.stats.processed).toFixed(1) : 0;
+                document.getElementById('avg-wait-time').textContent = avgWaitTime;
+            }
+            
+            updateQueue(queueId, queue) {
+                const container = document.getElementById(queueId);
+                container.innerHTML = '';
+                
+                queue.forEach(vehicle => {
+                    const card = document.createElement('div');
+                    card.className = 'vehicle-card';
+                    card.innerHTML = `
+                        <strong>🚗 Vehículo #${vehicle.id}</strong><br>
+                        📦 Peso: ${vehicle.weight} kg<br>
+                        🏃 Velocidad: ${vehicle.speed} m/s
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            
+            getVehicleIcon(weight) {
+                if (weight >= 1200) return '🚛';
+                if (weight >= 900) return '🚐';
+                return '🚗';
+            }
+            
+            logEvent(message, type = 'info') {
+                const log = document.getElementById('event-log');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                
+                const timestamp = new Date().toLocaleTimeString();
+                entry.textContent = `[${timestamp}] ${message}`;
+                
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+                
+                // Limitar a 50 entradas para evitar acumulación excesiva
+                if (log.children.length > 50) {
+                    log.removeChild(log.firstChild);
+                }
+            }
+            
+            initializeDisplay() {
+                this.leftLight = 'red';
+                this.rightLight = 'red';
+                this.updateDisplay();
+            }
+            
+            start() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.currentDirection = 'left'; // Comenzar con izquierda
+                this.lightTimer = 0;
+                
+                // Generar vehículos periódicamente
+                this.generationInterval = setInterval(() => {
+                    if (this.isRunning) this.generateVehicle();
+                }, this.GENERATION_INTERVAL);
+                
+                // Ejecutar simulación cada segundo
+                this.simulationInterval = setInterval(() => {
+                    if (this.isRunning) {
+                        this.controlTrafficLights();
+                        this.processTraffic();
+                        this.timer++;
+                        this.updateDisplay();
+                    }
+                }, 1000);
+                
+                this.logEvent('🟢 Simulación iniciada', 'success');
+            }
+            
+            pause() {
+                if (!this.isRunning) return;
+                
+                this.isRunning = false;
+                clearInterval(this.generationInterval);
+                clearInterval(this.simulationInterval);
+                
+                this.logEvent('⏸️ Simulación pausada', 'warning');
+            }
+            
+            reset() {
+                this.pause();
+                
+                this.leftQueue = [];
+                this.rightQueue = [];
+                this.vehicleOnBridge = null;
+                this.currentDirection = 'left';
+                this.lightTimer = 0;
+                this.timer = 0;
+                this.vehicleCounter = 0;
+                
+                this.stats = {
+                    generated: 0,
+                    processed: 0,
+                    rejected: 0,
+                    totalWaitTime: 0
+                };
+                
+                document.getElementById('event-log').innerHTML = '';
+                this.initializeDisplay();
+                this.logEvent('🔄 Simulación reiniciada', 'info');
+            }
+        }
+        
+        // Crear instancia global del simulador
+        const simulator = new BridgeTrafficSimulator();
+        
+        // Funciones globales para los botones
+        function startSimulation() {
+            simulator.start();
+        }
+        
+        function pauseSimulation() {
+            simulator.pause();
+        }
+        
+        function resetSimulation() {
+            simulator.reset();
+        }
+    </script>
+</body>
+</html>
